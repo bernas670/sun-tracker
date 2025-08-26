@@ -1,46 +1,12 @@
 class V1::EventsController < ApplicationController
+
+  FIELDS = [ :date, :sunrise, :sunset, :first_light, :last_light, :dawn, :dusk, :solar_noon, :golden_hour, :day_length, :utc_offset, :timezone ].freeze
+
   def index
-    # validate parameters
-    required_params = [ :location, :start_date ]
-    missing = required_params.select { |p| !params[p].present? }
-    if missing.any?
-      render json: { error: "Missing required parameter(s): #{missing.join(', ')}" }, status: :bad_request
+    unless valid_params?
       return
     end
 
-    unless params[:location].is_a?(String) && !params[:location].strip.empty?
-      render json: { error: "location must be a non-empty string" }
-      return
-    end
-
-    begin
-      start_date = Date.parse(params[:start_date])
-    rescue ArgumentError
-      render json: { error: "start_date must be a valid date" }, status: :bad_request
-      return
-    end
-
-    if params[:end_date].present?
-      begin
-        end_date = Date.parse(params[:end_date])
-      rescue ArgumentError
-        render json: { error: "end_date must be a valid date" }, status: :bad_request
-        return
-      end
-
-      if end_date < start_date
-        render json: { error: "end_date must be after start date" }, status: :bad_request
-        return
-      end
-
-      if (end_date - start_date).to_i > 365
-        render json: { error: "date range cannot exceed 365 days" }, status: :bad_request
-        return
-      end
-    end
-
-
-    # location to coordinates
     location = GeocodingService.geocode(params[:location])
     if location.nil?
       render json: { error: "location not found" }, status: :bad_request
@@ -48,12 +14,12 @@ class V1::EventsController < ApplicationController
     end
     latitude, longitude = location.values_at(:latitude, :longitude)
 
+    start_date = Date.parse(params[:start_date])
+    end_date = Date.parse(params[:end_date] || params[:start_date])
 
     # get events from database
-    fields = [ :date, :sunrise, :sunset, :first_light, :last_light, :dawn, :dusk, :solar_noon, :golden_hour, :day_length, :utc_offset ]
-    date_range = params[:end_date].present? ? start_date..end_date : [ start_date ]
-    cached_events = Event.where(latitude: latitude, longitude: longitude, date: date_range).select(*fields)
-
+    date_range = start_date..end_date
+    cached_events = Event.where(latitude: latitude, longitude: longitude, date: date_range).select(*FIELDS)
 
     # check if any days are missing
     requested_dates = date_range.to_set
@@ -75,18 +41,69 @@ class V1::EventsController < ApplicationController
       Event.insert_all(missing_hashes, unique_by: :index_events_on_latitude_and_longitude_and_date)
     end
 
-
     response_events = events || cached_events
-    response_events = response_events.map { |event| event.slice(*fields) }
 
-    response = {
-      days: response_events,
+    render json: {
+      days: response_events.map { |event| event.slice(*FIELDS).except("timezone") },
       location: location,
-      timezone: {
-        label: "UTC",
-        utc_offset: 0
-      }
+      timezone: response_events.first.timezone
     }
-    render json: response
+  end
+
+
+  private
+
+  def valid_coords?(lat, lng)
+    Float(params[:lat]) && Float(params[:lng]) rescue false
+  end
+
+  def valid_params?
+    # location, lat and lng validation
+    if params[:location].present?
+      unless params[:location].is_a?(String) && !params[:location].strip.empty?
+        render json: { error: "location must be a non-empty string" }, status: :bad_request
+        return false
+      end
+    else
+      render json: { error: "location is required" }, status: :bad_request
+      return false
+    end
+
+
+    # start date validation
+    unless params[:start_date].present?
+      render json: { error: "start_date is required" }, status: :bad_request
+      return false
+    end
+
+    begin
+      start_date = Date.parse(params[:start_date])
+    rescue ArgumentError
+      render json: { error: "start_date must be a valid date" }, status: :bad_request
+      return false
+    end
+
+
+    # end date validation
+    if params[:end_date].present?
+      begin
+        end_date = Date.parse(params[:end_date])
+      rescue ArgumentError
+        render json: { error: "end_date must be a valid date" }, status: :bad_request
+        return false
+      end
+
+      if end_date < start_date
+        render json: { error: "end_date must be after start_date" }, status: :bad_request
+        return false
+      end
+
+      if (end_date - start_date).to_i > 365
+        render json: { error: "date range cannot exceed 365 days" }, status: :bad_request
+        return false
+      end
+    end
+
+    true
   end
 end
