@@ -17,9 +17,10 @@ export default function Table({ data }: TableProps) {
   const endIdx = startIdx + rowsPerPage;
   const pageDays = data.days.slice(startIdx, endIdx);
   
-  const formatDayTime = (time: number | null) => time ? formatTime(time, data.timezone.utc_offset) : "-";
+  const formatDayTime = (time: number | null) => time ? formatTime(time) : "-";
   
   return <>
+    <div>
     <table>
       <thead>
         <tr>
@@ -52,33 +53,40 @@ export default function Table({ data }: TableProps) {
         ))}
       </tbody>
     </table>
-    <div style={{ marginTop: "1em" }}>
-      <select
-        value={rowsPerPage}
-        onChange={e => {
-          setRowsPerPage(Number(e.target.value));
-          setCurrentPage(1); 
-        }}
-      >
-        {rowsOptions.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
-      <button
-        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-        disabled={currentPage === 1}
-      >
-        Previous
-      </button>
-      <span style={{ margin: "0 1em" }}>
-        Page {currentPage} of {totalPages}
-      </span>
-      <button
-        onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-        disabled={currentPage === totalPages}
-      >
-        Next
-      </button>
+    <div className="table-pagination" style={{ margin: "0.5em 1em", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "2em" }}>
+      <div className="table-pagination-left">
+        <label htmlFor="rowsPerPage">Rows per page: </label>
+        <select
+          name="rowsPerPage"
+          value={rowsPerPage}
+          onChange={e => {
+            setRowsPerPage(Number(e.target.value));
+            setCurrentPage(1); 
+          }}
+        >
+          {rowsOptions.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+      <div className="table-pagination-right">
+        <button
+          onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
+        <span style={{ margin: "0 1em" }}>
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+    </div>
     </div>
   </>
 }

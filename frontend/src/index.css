@@ -1,0 +1,31 @@
+/* Reset and base styles for modern look */
+:root {
+  --color-bg: #f6f8fa;
+  --color-bg-card: #fff;
+  --color-text: #222;
+  --color-text-muted: #666;
+  --color-text-disabled: #aaa;
+  --color-border: #e0e0e0;
+  --color-border-light: #eee;
+  --color-btn: #ffd700;
+  /* Chart colors */
+  --chart-night: #0b1e3f;
+  --chart-day: #ffd700;
+  --chart-first-light: #6a4c93;
+  --chart-dawn: #9d4edd;
+  --chart-sunrise: #FFD6A5;
+  --chart-solar-noon: #FFFFB3;
+  --chart-golden-hour: #FFADAD;
+  --chart-sunset: #FFB4A2;
+  --chart-dusk: #B0A1FF;
+  --chart-last-light: #A0C4FF;
+}
+
+* {
+  box-sizing: border-box;
+}
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}

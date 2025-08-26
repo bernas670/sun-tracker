@@ -18,14 +18,9 @@ export interface Location {
   fullname: string;
 }
 
-export interface Timezone {
-  label: string;
-  utc_offset: number;
-}
-
 export interface SunData {
   days: Day[];
   location: Location;
-  timezone: Timezone;
+  timezone: string;
 }
 

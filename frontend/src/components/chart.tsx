@@ -1,8 +1,8 @@
-import { Area, AreaChart, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, type LegendPayload, type TooltipContentProps } from "recharts";
+import { Area, AreaChart, Line, Tooltip, XAxis, YAxis, ResponsiveContainer, type TooltipContentProps } from "recharts";
 import type { Day, SunData } from "../types";
 import { dateToUnix, formatDate, formatSecToHMS, formatTime } from "../utils/datetime";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
-import { useState } from "react";
+
 
 interface ChartProps {
   data: SunData,
@@ -13,18 +13,18 @@ type Event = { [K in EventKey]: { label: string, color: string } };
 
 
 const events: Event = {
-  first_light: { label: "First Light", color: "#A0C4FF" },
-  dawn: { label: "Dawn", color: "#BDB2FF" },
-  sunrise: { label: "Sunrise", color: "#FFD6A5" },
-  solar_noon: { label: "Solar Noon", color: "#FFFFB3" },
-  golden_hour: { label: "Golden Hour", color: "#FFADAD" },
-  sunset: { label: "Sunset", color: "#FFB4A2" },
-  dusk: { label: "Dusk", color: "#B0A1FF" },
-  last_light: { label: "Last Light", color: "#A0C4FF" },
+  first_light: { label: "First Light", color: "var(--chart-first-light)" },
+  dawn: { label: "Dawn", color: "var(--chart-dawn)" },
+  sunrise: { label: "Sunrise", color: "var(--chart-sunrise)" },
+  solar_noon: { label: "Solar Noon", color: "var(--chart-solar-noon)" },
+  golden_hour: { label: "Golden Hour", color: "var(--chart-golden-hour)" },
+  sunset: { label: "Sunset", color: "var(--chart-sunset)" },
+  dusk: { label: "Dusk", color: "var(--chart-dusk)" },
+  last_light: { label: "Last Light", color: "var(--chart-last-light)" },
 }
 
 export default function Chart({ data }: ChartProps) {
-  const [hoveringDataKey, setHoveringDataKey] = useState<any>(null);
+
   const MAX_DAY_LENGTH = 24 * 60 * 60;
 
   const convertData = (data: SunData) => data.days.map(day => {
@@ -40,7 +40,7 @@ export default function Chart({ data }: ChartProps) {
     // todo: create type
 
     const result = {
-      date: formatDate(day.date),
+      date: day.date,
       dateUnix: dateUnix,
       day_length: formatSecToHMS(day.day_length),
       ...times,
@@ -68,25 +68,8 @@ export default function Chart({ data }: ChartProps) {
     return result;
   })
 
-  const opacity = {
-    day: 1,
-    night: 1,
-    first_light: 1,
-    dawn: 1,
-    solar_noon: 1,
-    golden_hour: 1,
-    dusk: 1,
-    last_light: 1,
-  }
 
-  const handleMouseLeave = () => setHoveringDataKey(null)
-  const handleMouseEnter = (payload: LegendPayload) => setHoveringDataKey(
-    payload.dataKey === "night" ? 
-      ["early_night", "late_night"] 
-      : [ payload.dataKey ]
-  );
-
-  const formatDayTime = (time: number | null) => time ? formatTime(time, data.timezone.utc_offset) : "-";
+  const formatDayTime = (time: number | null) => time ? formatTime(time) : "-";
 
   const yTicks = [0, 7200, 14400, 21600, 28800, 36000, 43200, 50400, 57600, 64800, 72000, 79200, 86400]
   const tickFormatter = (seconds: number) => {
@@ -107,10 +90,10 @@ export default function Chart({ data }: ChartProps) {
 
     return (
       <div>
-        <p><strong>{ day.date }</strong></p>
+        <p><strong>{ formatDate(day.date) }</strong></p>
         { Object.keys(events).map(key => {
           const event = events[key as EventKey];
-          return (<p>
+          return (<p key={`${key}-${day["dateUnix"]}`}>
             {event.label}: {formatDayTime(day["dateUnix"] + day[key as EventKey])}
           </p>
         )})}
@@ -119,33 +102,44 @@ export default function Chart({ data }: ChartProps) {
     );
   };
 
-  return <>
-      <AreaChart width={1000} height={400} data={convertData(data)}>
-        <XAxis dataKey="date" />
-        <YAxis 
-          domain={[0, MAX_DAY_LENGTH]}
-          ticks={yTicks}
-          tickFormatter={tickFormatter}
-        />
+   return (
+     <div style={{ width: "100%", minHeight: 400 }}>
+       <div style={{ width: "100%", height: 400 }}>
+         <ResponsiveContainer width="100%" height="100%">
+           <AreaChart data={convertData(data)}>
+            <XAxis dataKey="date" 
+              tick={{ fontSize: 12 }}
+              angle={-45}
+               tickFormatter={(date) => new Date(date).toLocaleDateString("en-GB")}
+              textAnchor="end"
+              height={70}
+              />
+             <YAxis 
+               domain={[0, MAX_DAY_LENGTH]}
+               ticks={yTicks}
+               tickFormatter={tickFormatter}
+               tick={{ fontSize: 12 }}
+               width={70}
+             />
+             <Tooltip content={CustomTooltip}/>
 
-        <Tooltip content={CustomTooltip}/>
-        
-        <Area stackId="1" type="linear" dataKey="night_1" stroke="none" fill="#A0C4FF" />
-        <Area stackId="1" type="linear" dataKey="day_1" stroke="none" fill="#FFFFB3" />
-        <Area stackId="1" type="linear" dataKey="night_2" stroke="none" fill="#A0C4FF" />
-        <Area stackId="1" type="linear" dataKey="day_2" stroke="none" fill="#FFFFB3" />
+             <Area stackId="1" type="linear" dataKey="night_1" stroke="none" fill="var(--chart-night)" />
+             <Area stackId="1" type="linear" dataKey="day_1" stroke="none" fill="var(--chart-day)" />
+             <Area stackId="1" type="linear" dataKey="night_2" stroke="none" fill="var(--chart-night)" />
+             <Area stackId="1" type="linear" dataKey="day_2" stroke="none" fill="var(--chart-day)" />
 
-        <Line type="linear" dot={false} dataKey="first_light" stroke="#A0C4FF"/>
-        <Line type="linear" dot={false} dataKey="dawn" stroke="#BDB2FF" />
-        <Line type="linear" dot={false} dataKey="solar_noon" stroke="#FFFFB3" />
-        <Line type="linear" dot={false} dataKey="golden_hour" stroke="#FFADAD" strokeWidth={3} />
-        <Line type="linear" dot={false} dataKey="dusk" stroke="#B0A1FF" />
-        <Line type="linear" dot={false} dataKey="last_light" stroke="#A0C4FF" />
-
-        <Legend onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} />
-      </AreaChart>
-  </>;
-}
+             <Line type="linear" dot={false} dataKey="first_light" stroke="var(--chart-first-light)"/>
+             <Line type="linear" dot={false} dataKey="dawn" stroke="var(--chart-dawn)" />
+             <Line type="linear" dot={false} dataKey="solar_noon" stroke="var(--chart-solar-noon)" />
+             <Line type="linear" dot={false} dataKey="golden_hour" stroke="var(--chart-golden-hour)" strokeWidth={3} />
+             <Line type="linear" dot={false} dataKey="dusk" stroke="var(--chart-dusk)" />
+             <Line type="linear" dot={false} dataKey="last_light" stroke="var(--chart-last-light)" />
+           </AreaChart>
+         </ResponsiveContainer>
+       </div>
+     </div>
+   );
+ }
 
         // { Object.keys(events).map(key => (
         //   <Area key={key} type="monotone" dataKey={key} 

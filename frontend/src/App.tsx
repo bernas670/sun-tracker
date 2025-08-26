@@ -5,18 +5,19 @@ import type { SunData } from './types'
 import { fetchSunData } from './api/sunTracker';
 import Table from './components/table';
 import Chart from './components/chart';
+import ShareButton from './components/share_button';
 
 function App() {
   const [sunData, setSunData] = useState<SunData>();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>();
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
 
   useEffect(() => {
     const fetchDataFromUrl = async () => {
-      // todo: modify this, location will not be one of the params (only lat and lng)
       const urlParams = new URLSearchParams(window.location.search);
       const location = urlParams.get("location");
-      const lat = urlParams.get("lat");
-      const lng = urlParams.get("lng");
+
       const startDate = urlParams.get("start_date");
       const endDate = urlParams.get("end_date");
 
@@ -24,10 +25,10 @@ function App() {
         setIsLoading(true);
         try {
           const data = await fetchSunData(location, startDate, endDate);
+          setError(null);
           setSunData(data);
-        } catch (error) {
-          // todo: handle this error
-          console.log("Failed to load data: ", error);
+        } catch (err) {
+          handleError(err instanceof Error ? err.message : "An unexpected error occurred");
         } finally {
           setIsLoading(false);
         }
@@ -38,7 +39,6 @@ function App() {
   }, [])
 
   const handleReceivedData = (data: SunData) => {
-    console.log(data);
     setSunData(data);
 
     const params = new URLSearchParams({
@@ -51,34 +51,62 @@ function App() {
     window.history.replaceState({}, "", `?${params.toString()}`);
   }
 
+  const handleError = (message: string) => {
+    setError(message);
+    setShowErrorPopup(true);
+  }
+
   return (
     <>
       <div className="content-wrapper">
-      <header>
-        <h1>SunTracker</h1>
-        <p>Historical sunrise & sunset data</p>
+      <header className="site-header">
+        <div className="header-content">
+          <h1>SunTracker</h1>
+          <p>Historical sunrise & sunset data</p>
+        </div>
       </header>
 
-      <main>
-        <Form onDataReceived={handleReceivedData} />
+      <main className="centered-content">
+        <div className="card form-card">
+          <Form onDataReceived={handleReceivedData} onError={handleError} />
+        </div>
 
-        {isLoading && (
-          <p>Loading solar data...</p>
+        {showErrorPopup && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <p>{error}</p>
+              <button onClick={() => setShowErrorPopup(false)}>Close</button>
+            </div>
+          </div>
         )}
 
-        {sunData && (<>
-          <div>
-            <h1>{sunData.location.name}</h1>
-            <p>{sunData.days[0].date} - {sunData.days[sunData.days.length - 1].date}</p>
+        {isLoading && (
+          <div className="card loading-card">
+            <p>Loading solar data...</p>
           </div>
+        )}
 
-          <Chart data={sunData} /> 
-          <Table data={sunData} />
-        </>)}
+        {sunData && (
+          <div className="card results-card">
+            <div className="results-header">
+              <div className="results-header-left">
+                <h2>{sunData.location.name}<span className="annotation">{sunData.timezone}</span></h2>
+                <p className="subtitle">{sunData.days[0].date} - {sunData.days[sunData.days.length - 1].date}</p>
+              </div>
+              <div className="results-header-right">
+                <ShareButton />
+              </div>
+            </div>
+            <Chart data={sunData} />
+            <Table data={sunData} />
+          </div>
+        )}
       </main>
 
-      <footer>
-        <p>Powered by <a href="https://sunrisesunset.io/">SunriseSunset.io</a></p>
+      <footer className="site-footer">
+        <div className="footer-content">
+          <p>Powered by <a href="https://sunrisesunset.io/">SunriseSunset.io</a></p>
+        </div>
       </footer>
       </div>
     </>

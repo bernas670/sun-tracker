@@ -6,10 +6,8 @@ export function formatDate(date: string) {
   });
 }
 
-export function formatTime(utc_time: number, utc_offset: number) {
-  const date = new Date(utc_time + utc_offset);
-
-  return date.toLocaleTimeString("en-US", {
+export function formatTime(utc_time: number) {
+  return new Date(utc_time * 1000).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
