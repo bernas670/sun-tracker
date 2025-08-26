@@ -9,14 +9,14 @@ class V1::EventsController < ApplicationController
     end
 
     unless params[:location].is_a?(String) && !params[:location].strip.empty?
-      render json: { error: "Location must be a non-empty string" }
+      render json: { error: "location must be a non-empty string" }
       return
     end
 
     begin
       start_date = Date.parse(params[:start_date])
     rescue ArgumentError
-      render json: { error: "Start date must be a valid date" }, status: :bad_request
+      render json: { error: "start_date must be a valid date" }, status: :bad_request
       return
     end
 
@@ -24,12 +24,17 @@ class V1::EventsController < ApplicationController
       begin
         end_date = Date.parse(params[:end_date])
       rescue ArgumentError
-        render json: { error: "Start date must be a valid date" }, status: :bad_request
+        render json: { error: "end_date must be a valid date" }, status: :bad_request
         return
       end
 
       if end_date < start_date
-        render json: { error: "End date must be after start date" }, status: :bad_request
+        render json: { error: "end_date must be after start date" }, status: :bad_request
+        return
+      end
+
+      if (end_date - start_date).to_i > 365
+        render json: { error: "date range cannot exceed 365 days" }, status: :bad_request
         return
       end
     end
@@ -38,14 +43,14 @@ class V1::EventsController < ApplicationController
     # location to coordinates
     location = GeocodingService.geocode(params[:location])
     if location.nil?
-      render json: { error: "Location not found" }, status: bad_request
+      render json: { error: "location not found" }, status: :bad_request
       return
     end
     latitude, longitude = location.values_at(:latitude, :longitude)
 
 
     # get events from database
-    fields = [ :date, :sunrise, :sunset, :first_light, :last_light, :dawn, :dusk, :solar_noon, :golden_hour, :day_length ]
+    fields = [ :date, :sunrise, :sunset, :first_light, :last_light, :dawn, :dusk, :solar_noon, :golden_hour, :day_length, :utc_offset ]
     date_range = params[:end_date].present? ? start_date..end_date : [ start_date ]
     cached_events = Event.where(latitude: latitude, longitude: longitude, date: date_range).select(*fields)
 
@@ -58,7 +63,7 @@ class V1::EventsController < ApplicationController
     if !missing_dates.empty?
       missing_events = SunsetSunriseService.get(latitude, longitude, missing_dates.first, missing_dates.last)
       if missing_events.nil?
-        render json: { error: "No data found" }, status: bad_request
+        render json: { error: "No data found" }, status: :bad_request
         return
       end
 
