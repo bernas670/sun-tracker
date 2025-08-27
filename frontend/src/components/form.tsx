@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { SunData } from "../types";
 import { fetchSunData } from "../api/sunTracker";
+import { diffInDays } from "../utils/datetime";
 
 interface FormData {
   location: string,
@@ -66,6 +67,8 @@ export default function Form({ onDataReceived, onError }: FormProps) {
 
     if (!errors.startDate && !errors.endDate && end <= start) {
       errors.form = "End date must be after start date.";
+    } else if (!errors.startDate && !errors.endDate && !errors.form && diffInDays(start, end) > 365) {
+      errors.form = "Date range cannot exceed 365 days.";
     }
 
     setErrors(errors);

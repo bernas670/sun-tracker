@@ -28,3 +28,7 @@ export function dateToUnix(date: string) {
   const dateObj = new Date(date);
   return Math.floor(dateObj.getTime() / 1000);
 }
+
+export function diffInDays(start: Date, end: Date) {
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+}
