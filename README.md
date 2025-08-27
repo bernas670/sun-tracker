@@ -1,6 +1,6 @@
 # SunTracker
 
-Sun Tracker is a full-stack application for tracking sunrise and sunset events based on geolocation. It consists of a Ruby on Rails backend API and a React frontend powered by Vite. The backend manages event data and provides geocoding and sun time calculations, while the frontend offers a modern UI for interacting with the data.
+Sun Tracker is a full-stack application for tracking sunrise and sunset events based on geolocation. It consists of a Ruby on Rails backend API and a React frontend powered by Vite. The backend manages event data and provides geocoding and sun time calculations, while the frontend offers a modern UI for interacting with the data. Watch the video demo [here](https://www.youtube.com/watch?v=36XgDDjD8Zs).
 
 ![SunTracker](assets/sun-tracker.png)
 
