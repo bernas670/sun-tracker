@@ -61,8 +61,19 @@ function App() {
       <div className="content-wrapper">
       <header className="site-header">
         <div className="header-content">
-          <h1>SunTracker</h1>
-          <p>Historical sunrise & sunset data</p>
+          <a href="/" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <img
+              src="/sunset.svg"
+              alt="Sunset"
+              style={{
+                height: "48px",
+                width: "auto",
+                marginRight: "1rem"
+              }}
+            />
+            <h1 style={{ margin: 0 }}>SunTracker</h1>
+          </a>
+            <p>Historical sunrise & sunset data</p>
         </div>
       </header>
 
@@ -105,7 +116,7 @@ function App() {
 
       <footer className="site-footer">
         <div className="footer-content">
-          <p>Powered by <a href="https://sunrisesunset.io/">SunriseSunset.io</a></p>
+          <p>Powered by <a href="https://sunrisesunset.io/">SunriseSunset.io</a>, with some sprinkles of <span role="img" aria-label="ruby">💎</span></p>
         </div>
       </footer>
       </div>

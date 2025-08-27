@@ -2,7 +2,7 @@ import { Area, AreaChart, Line, Tooltip, XAxis, YAxis, ResponsiveContainer, type
 import type { Day, SunData } from "../types";
 import { dateToUnix, formatDate, formatSecToHMS, formatTime } from "../utils/datetime";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
-
+import React, { useState } from "react";
 
 interface ChartProps {
   data: SunData,
@@ -23,9 +23,24 @@ const events: Event = {
   last_light: { label: "Last Light", color: "var(--chart-last-light)" },
 }
 
+
 export default function Chart({ data }: ChartProps) {
 
-  const MAX_DAY_LENGTH = 24 * 60 * 60;
+   const MAX_DAY_LENGTH = 24 * 60 * 60;
+
+   const lineKeys = Object.keys(events) as EventKey[];
+   const [visibleLines, setVisibleLines] = useState<Record<EventKey, boolean>>(
+     () => Object.fromEntries(lineKeys.map(key => [key, true])) as Record<EventKey, boolean>
+   );
+
+   const toggleLine = (key: EventKey) => {
+     setVisibleLines(prev => ({ ...prev, [key]: !prev[key] }));
+   };
+
+   const toggleAllLines = () => {
+     const allEnabled = lineKeys.every(key => visibleLines[key]);
+     setVisibleLines(Object.fromEntries(lineKeys.map(key => [key, !allEnabled])) as Record<EventKey, boolean>);
+   };
 
   const convertData = (data: SunData) => data.days.map(day => {
     const dateUnix = dateToUnix(day.date);
@@ -82,69 +97,136 @@ export default function Chart({ data }: ChartProps) {
     return `${pad(hours)}:${pad(minutes)} ${ampm}`;
   };
 
-  const CustomTooltip = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
-    if (!active || !payload || !payload.length)
-      return null;
+   const CustomTooltip = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
+     if (!active || !payload || !payload.length)
+       return null;
 
-    const day = payload[0].payload; // assert type
+     const day = payload[0].payload;
 
-    return (
-      <div>
-        <p><strong>{ formatDate(day.date) }</strong></p>
-        { Object.keys(events).map(key => {
-          const event = events[key as EventKey];
-          return (<p key={`${key}-${day["dateUnix"]}`}>
-            {event.label}: {formatDayTime(day["dateUnix"] + day[key as EventKey])}
-          </p>
-        )})}
-        <p>Day Length: {day.day_length}</p>
-      </div>
-    );
-  };
+     return (
+       <div
+         style={{
+           background: "white",
+           border: "1px solid #ddd",
+           borderRadius: "10px",
+           boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+           padding: "1rem 1.25rem",
+           minWidth: 220,
+           fontSize: "1rem"
+         }}
+       >
+         <div style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+           {formatDate(day.date)}
+         </div>
+         <div style={{ display: "grid", gridTemplateColumns: "24px 1fr 1fr", gap: "0.4rem", marginBottom: "0.5rem" }}>
+           {Object.keys(events).map(key => {
+             const event = events[key as EventKey];
+             const timeValue = day[key as EventKey];
+             if (timeValue == null) return null;
+             return (
+               <React.Fragment key={`${key}-${day["dateUnix"]}`}>
+                 <span
+                   style={{
+                     width: 18,
+                     height: 18,
+                     display: "inline-block",
+                     borderRadius: 4,
+                     background: event.color,
+                     border: "1px solid #ccc",
+                     marginRight: 2
+                   }}
+                   title={event.label}
+                 />
+                 <span style={{ fontWeight: 500 }}>{event.label}</span>
+                 <span style={{ textAlign: "right" }}>
+                   {formatDayTime(day["dateUnix"] + timeValue)}
+                 </span>
+               </React.Fragment>
+             );
+           })}
+         </div>
+         <div style={{ fontWeight: 600, color: "#555", fontSize: "0.95rem", marginTop: "0.5rem" }}>
+           Day Length: <span style={{ fontWeight: 700, color: "#222" }}>{day.day_length}</span>
+         </div>
+       </div>
+     );
+   };
 
    return (
-     <div style={{ width: "100%", minHeight: 400 }}>
-       <div style={{ width: "100%", height: 400 }}>
-         <ResponsiveContainer width="100%" height="100%">
-           <AreaChart data={convertData(data)}>
-            <XAxis dataKey="date" 
-              tick={{ fontSize: 12 }}
-              angle={-45}
-               tickFormatter={(date) => new Date(date).toLocaleDateString("en-GB")}
-              textAnchor="end"
-              height={70}
+      <div style={{ width: "100%", minHeight: 400 }}>
+        {/* Checkbox controls */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "1.5rem", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem" }}>
+          {lineKeys.map(key => (
+            <span
+              key={key}
+              onClick={() => toggleLine(key)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                cursor: "pointer",
+                userSelect: "none"
+              }}
+            >
+              <span
+                style={{
+                  width: 28,
+                  height: 28,
+                  display: "inline-block",
+                  borderRadius: 6,
+                  border: "2px solid #ccc",
+                  background: visibleLines[key] ? events[key].color : "transparent",
+                  transition: "background 0.2s"
+                }}
+                title={events[key].label}
               />
-             <YAxis 
-               domain={[0, MAX_DAY_LENGTH]}
-               ticks={yTicks}
-               tickFormatter={tickFormatter}
+              {events[key].label}
+            </span>
+          ))}
+          <button type="button" onClick={toggleAllLines} style={{ marginLeft: "1.5rem", padding: "0.5rem 1.25rem", fontSize: "1rem" }}>Toggle All</button>
+        </div>
+
+        <div style={{ width: "100%", height: 400 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={convertData(data)}>
+             <XAxis dataKey="date" 
                tick={{ fontSize: 12 }}
-               width={70}
-             />
-             <Tooltip content={CustomTooltip}/>
+               angle={-45}
+                tickFormatter={(date) => new Date(date).toLocaleDateString("en-GB")}
+               textAnchor="end"
+               height={70}
+               />
+              <YAxis 
+                domain={[0, MAX_DAY_LENGTH]}
+                ticks={yTicks}
+                tickFormatter={tickFormatter}
+                tick={{ fontSize: 12 }}
+                width={70}
+              />
+              <Tooltip content={CustomTooltip}/>
 
-             <Area stackId="1" type="linear" dataKey="night_1" stroke="none" fill="var(--chart-night)" />
-             <Area stackId="1" type="linear" dataKey="day_1" stroke="none" fill="var(--chart-day)" />
-             <Area stackId="1" type="linear" dataKey="night_2" stroke="none" fill="var(--chart-night)" />
-             <Area stackId="1" type="linear" dataKey="day_2" stroke="none" fill="var(--chart-day)" />
+              <Area stackId="1" type="linear" dataKey="night_1" stroke="none" fill="var(--chart-night)" />
+              <Area stackId="1" type="linear" dataKey="day_1" stroke="none" fill="var(--chart-day)" />
+              <Area stackId="1" type="linear" dataKey="night_2" stroke="none" fill="var(--chart-night)" />
+              <Area stackId="1" type="linear" dataKey="day_2" stroke="none" fill="var(--chart-day)" />
 
-             <Line type="linear" dot={false} dataKey="first_light" stroke="var(--chart-first-light)"/>
-             <Line type="linear" dot={false} dataKey="dawn" stroke="var(--chart-dawn)" />
-             <Line type="linear" dot={false} dataKey="solar_noon" stroke="var(--chart-solar-noon)" />
-             <Line type="linear" dot={false} dataKey="golden_hour" stroke="var(--chart-golden-hour)" strokeWidth={3} />
-             <Line type="linear" dot={false} dataKey="dusk" stroke="var(--chart-dusk)" />
-             <Line type="linear" dot={false} dataKey="last_light" stroke="var(--chart-last-light)" />
-           </AreaChart>
-         </ResponsiveContainer>
-       </div>
-     </div>
-   );
+              {/* Render only enabled lines */}
+              {lineKeys.map(key => (
+                visibleLines[key] && (
+                  <Line
+                    key={key}
+                    type="linear"
+                    dot={false}
+                    dataKey={key}
+                    stroke={events[key].color}
+                    strokeWidth={4}
+                  />
+                )
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
  }
-
-        // { Object.keys(events).map(key => (
-        //   <Area key={key} type="monotone" dataKey={key} 
-        //     stroke={events[key as EventKey].color} 
-        //     fill={events[key as EventKey].color}
-        //   />
-        // ))}
 

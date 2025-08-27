@@ -59,13 +59,11 @@ export default function Form({ onDataReceived, onError }: FormProps) {
     if (!startDate.trim()) errors.startDate = "Start date is required.";
     if (!endDate.trim()) errors.endDate = "End date is required.";
 
-    // Check valid dates
     const start = new Date(startDate);
     const end = new Date(endDate);
     if (startDate && isNaN(start.getTime())) errors.startDate = "Start date is invalid.";
     if (endDate && isNaN(end.getTime())) errors.endDate = "End date is invalid.";
 
-    // Check end > start
     if (!errors.startDate && !errors.endDate && end <= start) {
       errors.form = "End date must be after start date.";
     }
