@@ -4,12 +4,15 @@ require "json"
 require "cgi"
 
 class SunsetSunriseService
-  def self.get(latitude, longitude, start_date, end_date = nil)
+  def self.get(latitude, longitude, dates)
     urlString = "https://api.sunrisesunset.io/json?lat=#{latitude}&lng=#{longitude}"
-    if end_date.nil?
-      urlString << "&date=#{start_date}"
+
+    if dates.length == 1
+      urlString << "&date=#{dates.first}"
+    elsif dates.length > 1
+      urlString << "&date_start=#{dates.first}&date_end=#{dates.last}"
     else
-      urlString << "&date_start=#{start_date}&date_end=#{end_date}"
+      nil
     end
 
     url = URI(urlString)
@@ -23,10 +26,14 @@ class SunsetSunriseService
     results = data["results"]
     results = results.is_a?(Array) ? results : [ results ]
 
-    results.map do |event|
-      event = format_event(event, latitude)
-      Event.new(event.merge(latitude: latitude, longitude: longitude))
-    end
+    dates_set = dates.map { |date| date.to_s }.to_set
+
+    results
+      .select { |event| dates_set.include?(event["date"]) }
+      .map do |event|
+        event = format_event(event, latitude)
+        Event.new(event.merge(latitude: latitude, longitude: longitude))
+      end
   rescue StandardError => e
     Rails.logger.error("SunsetSunrise error: #{e.message}")
     nil

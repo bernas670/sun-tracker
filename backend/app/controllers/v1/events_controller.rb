@@ -27,15 +27,13 @@ class V1::EventsController < ApplicationController
     missing_dates = (requested_dates - cached_dates).to_a.sort
 
     if !missing_dates.empty?
-      missing_events = SunsetSunriseService.get(latitude, longitude, missing_dates.first, missing_dates.last)
+      missing_events = SunsetSunriseService.get(latitude, longitude, missing_dates)
       if missing_events.nil?
         render json: { error: "No data found" }, status: :bad_request
         return
       end
 
-      all_events = cached_events + missing_events
-      unique_events = all_events.uniq(&:date)
-      events = unique_events.sort_by(&:date)
+      events = (cached_events + missing_events).sort_by(&:date)
 
       missing_hashes = missing_events.map { |event| event.attributes.except("id", "created_at", "updated_at") }
       Event.insert_all(missing_hashes, unique_by: :index_events_on_latitude_and_longitude_and_date)
