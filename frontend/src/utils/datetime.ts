@@ -3,6 +3,7 @@ export function formatDate(date: string) {
     weekday: "short",
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -11,6 +12,7 @@ export function formatTime(utc_time: number) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone: "UTC",
   });
 }
 

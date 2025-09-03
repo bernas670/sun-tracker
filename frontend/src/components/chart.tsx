@@ -192,7 +192,7 @@ export default function Chart({ data }: ChartProps) {
              <XAxis dataKey="date" 
                tick={{ fontSize: 12 }}
                angle={-45}
-                tickFormatter={(date) => new Date(date).toLocaleDateString("en-GB")}
+                tickFormatter={(date) => new Date(date).toLocaleDateString("en-GB", {timeZone: "UTC"})}
                textAnchor="end"
                height={70}
                />
